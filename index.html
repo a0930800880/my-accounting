@@ -400,11 +400,13 @@ document.getElementById('accountForm').addEventListener('submit',e=>{
  const desc=document.getElementById('newAccountDesc').value.trim();
  if(!name)return;
  if(ACCOUNTS.some(a=>a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');return}
- const id='acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
+ const preset=DEFAULT_ACCOUNTS.find(a=>a.name.toLowerCase()===name.toLowerCase());
+ const id=preset?preset.id:'acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
  const palette=['#8FB8D8','#B49AD8','#D5A36A','#7FB7A1','#D58D9B','#9AA6B2'];
- const color=palette[ACCOUNTS.length%palette.length];
- state.accounts.push({id,name,short:name.length>8?name.slice(0,8):name,desc:desc||'自訂帳戶',color,icon:'wallet'});
- state.opening[id]=0;syncAccounts();save();e.target.reset();alert('已新增帳戶：'+name);
+ const color=preset?preset.color:palette[ACCOUNTS.length%palette.length];
+ const account=preset?{...preset,desc:desc||preset.desc}:{id,name,short:name.length>8?name.slice(0,8):name,desc:desc||'自訂帳戶',color,icon:'wallet'};
+ state.accounts.push(account);
+ state.opening[id]=0;syncAccounts();save();e.target.reset();alert(preset?'已新增帳戶，並恢復原本的專屬顏色：'+name:'已新增帳戶：'+name);
 });
 function deleteAccount(id){
  const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
