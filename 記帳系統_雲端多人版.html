@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>個人金融管理中心</title>
+<style>
+:root{
+ --blue:#A2D0FF;--green:#A1D16A;--cash:#A9844A;
+ --ink:#202938;--muted:#748091;--line:#E5EAF0;--bg:#F4F6F9;
+ --white:#fff;--nav:#202B3A;--red:#D95C5C;--shadow:0 8px 28px rgba(31,45,61,.06)
+}
+*{box-sizing:border-box}
+/* 雲端登入頁：確保未登入時只顯示登入介面 */
+#mainApp{display:none}
+.auth-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;background:radial-gradient(circle at top left,#e8f2ff 0,#f4f6f9 48%,#eef2f6 100%)}
+.auth-gate.hidden{display:none!important}
+.auth-card{width:min(100%,440px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 18px 55px rgba(31,45,61,.12)}
+.auth-brand{display:flex;align-items:center;gap:13px;margin-bottom:23px}
+.auth-brand h2{font-size:23px;margin:5px 0 0}
+.auth-mark{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#e8f2ff;color:#2d6da8;flex:none}
+.auth-mark svg{width:31px;height:31px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#f1f4f8;border-radius:11px;margin-bottom:20px}
+.auth-tabs button{border:0;border-radius:8px;background:transparent;padding:10px;color:#687587;font-weight:650}
+.auth-tabs button.active{background:#fff;color:var(--ink);box-shadow:0 1px 5px rgba(31,45,61,.10)}
+#authForm{display:grid;gap:13px}
+#authForm label,.invite-join label{display:grid;gap:7px}
+.auth-submit{width:100%;padding:12px;margin-top:3px}
+.auth-message{font-size:13px;line-height:1.65;color:#64748b;margin:0;min-height:22px;overflow-wrap:anywhere}
+.invite-join{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:18px;margin-top:16px}
+.auth-foot{font-size:12px;line-height:1.6;color:#8792a1;margin:19px 0 0}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:245px 1fr;min-height:100vh}
+.sidebar{background:var(--nav);color:#fff;padding:25px 17px;display:flex;flex-direction:column;gap:24px}
+.brand{padding:5px 10px 20px;border-bottom:1px solid #ffffff20}
+.brand small{color:#b9c4d2;letter-spacing:1.5px;font-size:10px}
+.brand h1{font-size:19px;margin:8px 0 0}
+.nav{display:grid;gap:7px}
+.nav button{border:0;background:transparent;color:#cbd5e1;text-align:left;padding:12px 13px;border-radius:10px;font-size:14px}
+.nav button.active,.nav button:hover{background:#ffffff18;color:#fff}
+.sidebar-note{margin-top:auto;color:#9eabbc;font-size:11px;line-height:1.7;padding:10px}
+main{padding:28px clamp(16px,3vw,42px);max-width:1500px;width:100%;margin:auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:25px}
+.eyebrow{font-size:11px;color:var(--muted);letter-spacing:1.4px;font-weight:700}
+h2{font-size:25px;margin:5px 0 0}
+.top-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.top-actions select{width:auto;min-width:145px;max-width:220px}.member-list{display:grid;gap:8px;margin-top:12px}.member-row{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:12px}
+.btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;color:var(--ink);font-weight:600;font-size:13px}
+.btn.primary{background:var(--nav);color:#fff;border-color:var(--nav)}
+.btn.danger{color:var(--red)}
+.panel{display:none}.panel.active{display:block}
+.hero{background:linear-gradient(120deg,#26364a,#172231);color:white;border-radius:18px;padding:24px 26px;box-shadow:var(--shadow);margin-bottom:18px}
+.hero .label{color:#c4d0dd;font-size:12px}
+.hero .total{font-size:34px;font-weight:750;letter-spacing:.3px;margin:7px 0}
+.hero .sub{font-size:12px;color:#b8c5d3}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.account{background:#fff;border:1px solid var(--line);border-radius:15px;padding:17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.account:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent)}
+.account-head{display:flex;align-items:center;gap:10px}
+.account-icon{width:37px;height:37px;border-radius:11px;background:var(--accent);display:grid;place-items:center;color:#fff;font-size:18px}
+.account-name{font-weight:750;font-size:14px}
+.account-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.account-balance{font-size:23px;font-weight:750;margin-top:17px}
+.account-foot{font-size:11px;color:var(--muted);margin-top:3px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.metric,.section{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}
+.metric .m-label{font-size:12px;color:var(--muted)}
+.metric .m-value{font-size:22px;font-weight:750;margin-top:8px}
+.income{color:#27865B}.expense{color:var(--red)}
+.section{margin-bottom:18px}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.section-title h3{font-size:15px;margin:0}
+.muted{color:var(--muted);font-size:12px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}
+th{text-align:left;color:var(--muted);font-size:11px;font-weight:650;background:#F8FAFC}
+th,td{padding:12px 11px;border-bottom:1px solid var(--line)}
+td.amount{text-align:right;font-weight:700}
+.pill{display:inline-block;padding:4px 8px;border-radius:20px;font-size:11px;background:#eef2f6}
+.pill.in{color:#218253;background:#e8f6ef}.pill.out{color:#b94b4b;background:#fff0f0}.pill.transfer{color:#64748b;background:#edf1f5}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.field{display:grid;gap:6px}.field.full{grid-column:1/-1}
+label{font-size:12px;color:#596579;font-weight:650}
+input,select{width:100%;border:1px solid #dce3eb;border-radius:9px;padding:11px 12px;background:#fff;color:var(--ink);outline:none}
+input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:13px}
+.toolbar select{width:auto;min-width:135px}
+.help{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:11px;padding:13px;color:#667085;font-size:12px;line-height:1.7}
+.footer{text-align:center;color:#98a2b3;font-size:11px;padding:18px}
+@media(max-width:850px){
+ .app{grid-template-columns:1fr}.sidebar{padding:13px 14px;gap:10px}.brand{padding:3px 7px 10px}.brand h1{font-size:16px}
+ .nav{display:flex;overflow:auto}.nav button{white-space:nowrap;padding:9px 11px}.sidebar-note{display:none}
+ main{padding:20px 14px}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}
+}
+@media(max-width:520px){.topbar{align-items:flex-start;flex-direction:column}.metrics{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.hero .total{font-size:28px}}
+</style>
+</head>
+<body>
+
+<div id="authGate" class="auth-gate">
+ <div class="auth-card">
+  <div class="auth-brand">
+   <div class="auth-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 9.5V7a3 3 0 0 1 3-3h17"/><path d="M5 9.5h20a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V10.5a1 1 0 0 1 1-1Z"/><path d="M21 15h7v6h-7a3 3 0 0 1 0-6Z"/></svg></div>
+  <div><div class="eyebrow">PERSONAL FINANCE SYSTEM</div><h2>多人雲端記帳</h2></div>
+ </div>
+ <div class="auth-tabs"><button id="loginTab" class="active" type="button">登入</button><button id="signupTab" type="button">建立帳號</button></div>
+ <form id="authForm">
+  <label>電子郵件<input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com"></label>
+  <label>密碼<input id="authPassword" type="password" minlength="8" autocomplete="current-password" required placeholder="至少 8 個字元"></label>
+  <button class="btn primary auth-submit" id="authSubmit" type="submit">登入</button>
+  <p id="authMessage" class="auth-message">使用帳號登入，查看你獲邀加入的帳本。</p>
+ </form>
+ <form id="joinInviteForm" class="invite-join">
+  <label>有邀請碼？輸入邀請碼加入帳本<input id="inviteToken" placeholder="貼上邀請碼"></label>
+  <button class="btn" type="submit">登入後加入帳本</button>
+ </form>
+ <p class="auth-foot">帳本資料存放於雲端，只有帳本成員能依權限存取。</p>
+ </div>
+</div>
+
+<div class="app" id="mainApp">
+<aside class="sidebar">
+ <div class="brand"><small>PERSONAL FINANCIAL SYSTEM</small><h1>個人金融管理中心</h1></div>
+ <nav class="nav">
+  <button class="active" data-page="dashboard">▦　財務總覽</button>
+  <button data-page="transactions">▤　收支記帳</button>
+  <button data-page="accounts">▣　帳戶管理</button>
+  <button data-page="reports">▥　財務統計</button>
+  <button data-page="settings">⚙　資料與設定</button>
+ </nav>
+ <div class="sidebar-note">私人財務管理工具<br>帳本資料儲存在雲端資料庫。</div>
+</aside>
+<main>
+ <div class="topbar">
+  <div><div class="eyebrow">PERSONAL FINANCE / <span id="today"></span></div><h2 id="pageTitle">財務總覽</h2></div>
+  <div class="top-actions">
+   <span id="signedInAs" class="muted"></span>
+   <select id="bookSelect" aria-label="選擇帳本" title="選擇帳本"></select>
+   <button class="btn" id="addBookBtn" type="button">＋ 新增帳本</button>
+   <button class="btn" id="deleteBookBtn" type="button">刪除帳本</button>
+   <button class="btn" id="inviteBtn" type="button">邀請成員</button>
+   <button class="btn" id="logoutBtn" type="button">登出</button>
+   <button class="btn" id="exportBtn" type="button">匯出備份</button>
+   <button class="btn primary" id="quickAdd" type="button">＋ 新增交易</button>
+  </div>
+ </div>
+
+ <section class="panel active" id="dashboard">
+  <div class="hero"><div class="label">目前總資產（帳戶餘額合計）</div><div class="total" id="totalAssets">NT$ 0</div><div class="sub" id="dashboardBookName">帳本：我的帳本</div></div>
+  <div class="grid" id="accountCards"></div>
+  <div class="metrics">
+   <div class="metric"><div class="m-label">本月收入</div><div class="m-value income" id="monthIncome">NT$ 0</div></div>
+   <div class="metric"><div class="m-label">本月支出</div><div class="m-value expense" id="monthExpense">NT$ 0</div></div>
+   <div class="metric"><div class="m-label">本月淨收支</div><div class="m-value" id="monthNet">NT$ 0</div></div>
+  </div>
+  <div class="section"><div class="section-title"><h3>最近交易</h3><span class="muted">最新 8 筆</span></div><div id="recentTable"></div></div>
+ </section>
+
+ <section class="panel" id="transactions">
+  <div class="section">
+   <div class="section-title"><h3>新增交易</h3><span class="muted">收入・支出・帳戶轉帳</span></div>
+   <form id="txForm">
+    <div class="form-grid">
+     <div class="field"><label>交易日期</label><input type="date" id="txDate" required></div>
+     <div class="field"><label>交易類型</label><select id="txType"><option value="expense">支出</option><option value="income">收入</option><option value="transfer">帳戶轉帳</option></select></div>
+     <div class="field" id="accountField"><label>使用帳戶</label><select id="txAccount"></select></div>
+     <div class="field" id="toAccountField" style="display:none"><label>轉入帳戶</label><select id="txToAccount"></select></div>
+     <div class="field" id="categoryField"><label>分類</label><select id="txCategory"></select></div>
+     <div class="field"><label>金額（NT$）</label><input type="number" id="txAmount" min="1" step="1" placeholder="輸入金額" required></div>
+     <div class="field full"><label>項目／備註</label><input id="txNote" maxlength="100" placeholder="例如：午餐、薪資、富邦提款"></div>
+    </div>
+    <div class="actions"><button class="btn primary" type="submit">儲存交易</button><button class="btn" type="reset">清除欄位</button></div>
+   </form>
+  </div>
+  <div class="section">
+   <div class="section-title"><h3>交易紀錄</h3><span class="muted" id="txCount">0 筆</span></div>
+   <div class="toolbar"><select id="filterAccount"><option value="">全部帳戶</option></select><select id="filterType"><option value="">全部類型</option><option value="income">收入</option><option value="expense">支出</option><option value="transfer">轉帳</option></select></div>
+   <div id="allTransactions"></div>
+  </div>
+ </section>
+
+ <section class="panel" id="accounts">
+  <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div id="accountDetails"></div></div>
+  <div class="section"><div class="section-title"><h3>期初餘額設定</h3></div>
+   <div class="help">第一次使用時，請輸入目前各帳戶的實際餘額。期初餘額不是收入，之後的交易會從這個數字開始計算。</div>
+   <form id="openingForm" style="margin-top:14px"><div class="form-grid" id="openingFields"></div><div class="actions"><button class="btn primary">儲存期初餘額</button></div></form>
+  </div>
+ </section>
+
+ <section class="panel" id="reports">
+  <div class="metrics">
+   <div class="metric"><div class="m-label">累計收入</div><div class="m-value income" id="allIncome">NT$ 0</div></div>
+   <div class="metric"><div class="m-label">累計支出</div><div class="m-value expense" id="allExpense">NT$ 0</div></div>
+   <div class="metric"><div class="m-label">交易筆數</div><div class="m-value" id="allCount">0</div></div>
+  </div>
+  <div class="section"><div class="section-title"><h3>支出分類統計</h3></div><div id="categoryReport"></div></div>
+  <div class="section"><div class="section-title"><h3>帳戶資金分布</h3></div><div id="balanceReport"></div></div>
+ </section>
+
+ <section class="panel" id="settings">
+  <div class="section"><div class="section-title"><h3>資料備份與還原</h3></div>
+   <p class="muted">帳本資料儲存在雲端資料庫，並依帳本成員權限隔離。建議定期匯出 JSON 備份，並保存在安全的位置。</p>
+   <div class="actions"><button class="btn primary" id="exportBtn2">下載資料備份</button><label class="btn" for="importFile">匯入備份</label><input id="importFile" type="file" accept=".json,application/json" style="display:none"><button class="btn danger" id="clearBtn">清空所有資料</button></div>
+  </div>
+  <div class="section"><div class="section-title"><h3>帳本成員與邀請</h3><span class="muted">僅帳本擁有者／管理員可建立邀請</span></div>
+   <div class="actions"><button class="btn primary" id="createInviteBtn" type="button">產生邀請連結</button><button class="btn" id="copyInviteBtn" type="button" disabled>複製邀請連結</button></div>
+   <p id="inviteStatus" class="help" aria-live="polite">登入後可查看目前帳本成員，並建立邀請連結。</p>
+   <div id="memberList" class="member-list"></div>
+  </div>
+  <div class="section"><div class="section-title"><h3>帳戶與分類原則</h3></div>
+   <div class="help">
+    富邦銀行｜簽帳：正職薪資、家庭家用、固定支出與資金管理。<br>
+    第一銀行｜金融：外送收入、日常消費、約會與交通。<br>
+    現金錢包：提款、現金收入、實體現金消費。<br><br>
+    帳戶轉帳只改變資金所在位置，不列入收入或支出。請勿輸入網銀密碼、完整卡號或安全碼。
+   </div>
+  </div>
+ </section>
+ <div class="footer">PERSONAL FINANCE CENTER · 雲端多人版</div>
+</main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const ACCOUNTS=[
+ {id:'fubon',name:'富邦銀行｜簽帳',short:'富邦簽帳',desc:'主帳戶・正職薪資與資金管理',color:'#A2D0FF',icon:'wallet'},
+ {id:'first',name:'第一銀行｜金融',short:'第一金融',desc:'日常帳戶・外送收入與日常消費',color:'#A1D16A',icon:'wallet'},
+ {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'實體支付・零用金管理',color:'#A9844A',icon:'cash'}
+];
+const CATS={
+ income:['正職薪資','外送兼職','家庭給款','其他收入'],
+ expense:['家庭家用','日常生活','電信費用','飲食','約會規劃','娛樂支出','交通費用','額外吃食','個人購物','機車維修','其他支出'],
+ transfer:['銀行提款','現金存入銀行','帳戶間轉帳']
+};
+// Supabase 雲端設定：部署前請填入自己的 Project URL 與 anon/publishable key。
+const SUPABASE_URL='https://iesipsgrequpyerpbxpq.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_sVEWajGhKRiOqvJpIgSLdg_CYtVKA_x';
+let sb=null, session=null, books=[], currentBookId=null, state={opening:{fubon:0,first:0,cash:0},transactions:[]};
+let currentRole='viewer', lastInviteUrl='', authMode='login', realtimeChannel=null, pendingInviteToken='';
+const blankBookData=()=>({opening:{fubon:0,first:0,cash:0},transactions:[]});
+function save(){persistCurrentBook()}
+async function persistCurrentBook(){
+ if(!sb||!currentBookId)return;
+ const {error}=await sb.from('ledger_data').upsert({ledger_id:currentBookId,data:state,updated_at:new Date().toISOString()},{onConflict:'ledger_id'});
+ if(error)showToast('雲端儲存失敗：'+error.message);
+ else render();
+}
+function showToast(message){const el=document.getElementById('inviteStatus');if(el)el.textContent=message;else alert(message)}
+function bookLabel(){return books.find(b=>b.id===currentBookId)?.name||'目前帳本'}
+function renderBookSelect(){
+ const select=document.getElementById('bookSelect');if(!select)return;
+ select.innerHTML=books.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');
+ select.value=currentBookId||'';
+}
+async function loadCurrentLedger(){
+ const book=books.find(b=>b.id===currentBookId);if(!book)return;
+ currentRole=book.role||'viewer';
+ const {data,error}=await sb.from('ledger_data').select('data').eq('ledger_id',currentBookId).maybeSingle();
+ if(error){showToast('讀取帳本失敗：'+error.message);return}
+ state=data?.data||blankBookData();renderBookSelect();render();
+ subscribeLedger();
+}
+async function loadCloudLedgers(){
+ const {data,error}=await sb.from('ledgers').select('id,name,owner_id,created_at').order('created_at');
+ if(error){showToast('讀取帳本清單失敗：'+error.message);return}
+ const {data:members,error:memberError}=await sb.from('ledger_members').select('ledger_id,role').eq('user_id',session.user.id);
+ if(memberError){showToast('讀取帳本權限失敗：'+memberError.message);return}
+ const roles=new Map((members||[]).map(m=>[m.ledger_id,m.role]));
+ books=(data||[]).filter(b=>roles.has(b.id)||b.owner_id===session.user.id).map(b=>({...b,role:roles.get(b.id)||'owner'}));
+ if(!books.length){await createLedger('我的帳本');return}
+ if(!books.some(b=>b.id===currentBookId))currentBookId=books[0].id;
+ await loadCurrentLedger();
+}
+async function createLedger(name){
+ const {data,error}=await sb.from('ledgers').insert({name,owner_id:session.user.id}).select('id,name,owner_id,created_at').single();
+ if(error){showToast('建立帳本失敗：'+error.message);return}
+ const {error:memberError}=await sb.from('ledger_members').insert({ledger_id:data.id,user_id:session.user.id,role:'owner'});
+ if(memberError){showToast('建立帳本權限失敗：'+memberError.message);return}
+ const {error:dataError}=await sb.from('ledger_data').insert({ledger_id:data.id,data:blankBookData()});
+ if(dataError){showToast('建立帳本資料失敗：'+dataError.message);return}
+ currentBookId=data.id;await loadCloudLedgers();
+}
+function subscribeLedger(){
+ if(realtimeChannel)sb.removeChannel(realtimeChannel);
+ realtimeChannel=sb.channel('ledger-data-'+currentBookId).on('postgres_changes',{event:'UPDATE',schema:'public',table:'ledger_data',filter:'ledger_id=eq.'+currentBookId},payload=>{
+  if(payload.new?.data){state=payload.new.data;render()}
+ }).subscribe();
+}
+async function initCloud(){
+ if(!window.supabase){document.getElementById('authMessage').textContent='無法載入 Supabase 雲端元件。請確認網路連線，並使用 Chrome/Edge 開啟網站。';return}
+ if(SUPABASE_URL.startsWith('YOUR_')||SUPABASE_ANON_KEY.startsWith('YOUR_')){
+  document.getElementById('authMessage').textContent='尚未設定雲端資料庫。請先依附上的 SQL 與設定說明建立 Supabase 專案並填入金鑰。';
+  return;
+ }
+ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ const {data}=await sb.auth.getSession();session=data.session;
+ if(session)await enterApp();
+}
+async function enterApp(){
+ document.getElementById('authGate').classList.add('hidden');
+ document.getElementById('mainApp').style.display='grid';
+ document.getElementById('signedInAs').textContent=session.user.email;
+ await loadCloudLedgers();
+ const pending=new URLSearchParams(location.search).get('invite')||pendingInviteToken;
+ if(pending){pendingInviteToken='';document.getElementById('inviteToken').value=pending;await acceptInvite(pending);history.replaceState({},'',location.pathname)}
+}
+function leaveApp(){
+ document.getElementById('authGate').classList.remove('hidden');
+ document.getElementById('mainApp').style.display='none';
+ document.getElementById('signedInAs').textContent='';
+ if(realtimeChannel&&sb)sb.removeChannel(realtimeChannel);
+ books=[];currentBookId=null;state=blankBookData();
+}
+function money(n){return 'NT$ '+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0})}
+function accountIcon(kind){
+ const common='fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"';
+ if(kind==='cash')return `<svg viewBox="0 0 32 32" ${common} aria-label="鈔票圖案"><rect x="3.5" y="7" width="25" height="18" rx="3.2"/><circle cx="16" cy="16" r="4.2"/><path d="M7.5 11.5h1.2M23.3 20.5h1.2"/></svg>`;
+ return `<svg viewBox="0 0 32 32" ${common} aria-label="皮夾圖案"><path d="M5.2 9.5V7.2a2.8 2.8 0 0 1 2.8-2.8h16.2"/><path d="M5.2 9.5h20.1a2.8 2.8 0 0 1 2.8 2.8v12a2.8 2.8 0 0 1-2.8 2.8H7.1a2.8 2.8 0 0 1-2.8-2.8V10.8a1.3 1.3 0 0 1 .9-1.3Z"/><path d="M21.1 14.7h7v6.1h-7a3.05 3.05 0 0 1 0-6.1Z"/></svg>`;
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function balance(id){let b=Number(state.opening[id]||0);state.transactions.forEach(t=>{if(t.type==='income'&&t.account===id)b+=t.amount;if(t.type==='expense'&&t.account===id)b-=t.amount;if(t.type==='transfer'){if(t.from===id)b-=t.amount;if(t.to===id)b+=t.amount}});return b}
+function totals(){return ACCOUNTS.reduce((s,a)=>s+balance(a.id),0)}
+function monthTx(){let m=new Date().toISOString().slice(0,7);return state.transactions.filter(t=>t.date?.startsWith(m))}
+function sumType(arr,type){return arr.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0)}
+function accountName(id){return ACCOUNTS.find(a=>a.id===id)?.short||id}
+function typeName(t){return {income:'收入',expense:'支出',transfer:'轉帳'}[t]||t}
+function transactionRows(list){
+ if(!list.length)return '<div class="empty">目前沒有交易紀錄</div>';
+ return `<div class="table-wrap"><table><thead><tr><th>日期</th><th>帳戶</th><th>類型</th><th>分類／項目</th><th style="text-align:right">金額</th><th>操作</th></tr></thead><tbody>${list.map(t=>{
+ let acct=t.type==='transfer'?`${accountName(t.from)} → ${accountName(t.to)}`:accountName(t.account);
+ let amount=t.type==='income'?`+${money(t.amount)}`:t.type==='expense'?`-${money(t.amount)}`:money(t.amount);
+ return `<tr><td>${esc(t.date)}</td><td>${esc(acct)}</td><td><span class="pill ${t.type==='income'?'in':t.type==='expense'?'out':'transfer'}">${typeName(t.type)}</span></td><td>${esc(t.category||'帳戶轉帳')}<div class="muted">${esc(t.note||'')}</div></td><td class="amount">${amount}</td><td><button class="btn" onclick="editTx('${t.id}')">編輯</button> <button class="btn danger" onclick="deleteTx('${t.id}')">刪除</button></td></tr>`
+ }).join('')}</tbody></table></div>`
+}
+function render(){
+ document.getElementById('totalAssets').textContent=money(totals());
+  const bookNameEl=document.getElementById('dashboardBookName');if(bookNameEl)bookNameEl.textContent='帳本：'+bookLabel();
+  renderBookSelect();
+ document.getElementById('accountCards').innerHTML=ACCOUNTS.map(a=>`<div class="account" style="--accent:${a.color}"><div class="account-head"><div class="account-icon">${accountIcon(a.icon)}</div><div><div class="account-name">${a.name}</div><div class="account-desc">${a.desc}</div></div></div><div class="account-balance">${money(balance(a.id))}</div><div class="account-foot">目前登記餘額</div></div>`).join('');
+ let mt=monthTx(),inc=sumType(mt,'income'),out=sumType(mt,'expense');
+ document.getElementById('monthIncome').textContent=money(inc);document.getElementById('monthExpense').textContent=money(out);
+ document.getElementById('monthNet').textContent=money(inc-out);
+ let sorted=[...state.transactions].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.created||0)-(a.created||0));
+ document.getElementById('recentTable').innerHTML=transactionRows(sorted.slice(0,8));
+ document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions());
+ document.getElementById('txCount').textContent=state.transactions.length+' 筆';
+ document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${a.name}</b><div class="muted">${a.desc}</div></div><b>${money(balance(a.id))}</b></div>`).join('');
+ document.getElementById('openingFields').innerHTML=ACCOUNTS.map(a=>`<div class="field"><label>${a.name}期初餘額</label><input type="number" min="0" step="1" name="${a.id}" value="${Number(state.opening[a.id]||0)}"></div>`).join('');
+ document.getElementById('allIncome').textContent=money(sumType(state.transactions,'income'));
+ document.getElementById('allExpense').textContent=money(sumType(state.transactions,'expense'));
+ document.getElementById('allCount').textContent=state.transactions.length;
+ let expenses=state.transactions.filter(t=>t.type==='expense'), map={};expenses.forEach(t=>map[t.category]=(map[t.category]||0)+t.amount);
+ let cats=Object.entries(map).sort((a,b)=>b[1]-a[1]);
+ document.getElementById('categoryReport').innerHTML=cats.length?cats.map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)"><span>${esc(k)}</span><b>${money(v)}</b></div>`).join(''):'<div class="empty">尚無支出資料</div>';
+ document.getElementById('balanceReport').innerHTML=ACCOUNTS.map(a=>`<div style="margin:12px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${a.short}</span><b>${money(balance(a.id))}</b></div><div style="height:9px;background:#edf1f5;border-radius:20px;margin-top:7px;overflow:hidden"><div style="height:100%;width:${totals()>0?Math.max(0,balance(a.id)/totals()*100):0}%;background:${a.color}"></div></div></div>`).join('');
+}
+function filteredTransactions(){let a=document.getElementById('filterAccount')?.value||'',ty=document.getElementById('filterType')?.value||'';return [...state.transactions].filter(t=>(!a&&(true)||t.account===a||t.from===a||t.to===a)&&(!ty||t.type===ty)).sort((x,y)=>(y.date||'').localeCompare(x.date||''))}
+function fillSelects(){
+ let opts=ACCOUNTS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+ ['txAccount','txToAccount'].forEach(id=>document.getElementById(id).innerHTML=opts);
+ document.getElementById('filterAccount').innerHTML='<option value="">全部帳戶</option>'+opts;
+ updateCategories();
+}
+function updateCategories(){let ty=document.getElementById('txType').value;document.getElementById('txCategory').innerHTML=CATS[ty].map(c=>`<option>${c}</option>`).join('');document.getElementById('categoryField').style.display=ty==='transfer'?'none':'grid';document.getElementById('toAccountField').style.display=ty==='transfer'?'grid':'none'}
+document.getElementById('txType').addEventListener('change',updateCategories);
+document.getElementById('txForm').addEventListener('submit',e=>{
+ e.preventDefault();let type=document.getElementById('txType').value,amount=Number(document.getElementById('txAmount').value);
+ let account=document.getElementById('txAccount').value,to=document.getElementById('txToAccount').value;
+ if(!Number.isFinite(amount)||amount<=0)return alert('請輸入大於 0 的金額');
+ if(type==='transfer'&&account===to)return alert('轉出與轉入帳戶不能相同');
+ let t={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:document.getElementById('txDate').value,type,amount,account,from:account,to,category:type==='transfer'?'帳戶轉帳':document.getElementById('txCategory').value,note:document.getElementById('txNote').value.trim(),created:Date.now()};
+ state.transactions.push(t);save();e.target.reset();document.getElementById('txDate').value=new Date().toISOString().slice(0,10);document.getElementById('txType').value='expense';updateCategories();alert('交易已儲存');showPage('dashboard');
+});
+function editTx(id){let t=state.transactions.find(x=>x.id===id);if(!t)return;let v=prompt('修改備註／項目：',t.note||'');if(v===null)return;t.note=v;save()}
+function deleteTx(id){if(!confirm('確定刪除這筆交易？刪除後帳戶餘額會重新計算。'))return;state.transactions=state.transactions.filter(t=>t.id!==id);save()}
+window.editTx=editTx;window.deleteTx=deleteTx;
+document.getElementById('openingForm').addEventListener('submit',e=>{e.preventDefault();let fd=new FormData(e.target);ACCOUNTS.forEach(a=>state.opening[a.id]=Number(fd.get(a.id)||0));save();alert('期初餘額已更新')});
+document.getElementById('filterAccount').addEventListener('change',()=>document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions()));
+document.getElementById('filterType').addEventListener('change',()=>document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions()));
+function exportData(){let blob=new Blob([JSON.stringify({bookName:bookLabel(),...state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personal-finance-'+bookLabel()+'-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)}
+document.getElementById('exportBtn').onclick=exportData;document.getElementById('exportBtn2').onclick=exportData;
+document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=d;save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
+document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state={opening:{fubon:0,first:0,cash:0},transactions:[]};save()}};
+const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',reports:'財務統計',settings:'資料與設定'};
+function showPage(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('pageTitle').textContent=titles[p];if(p==='transactions')document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions())}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+document.getElementById('quickAdd').onclick=()=>{showPage('transactions');document.getElementById('txAmount').focus()};
+document.getElementById('bookSelect').addEventListener('change',async e=>{currentBookId=e.target.value;await loadCurrentLedger()});
+document.getElementById('addBookBtn').addEventListener('click',()=>{const name=prompt('請輸入新帳本名稱：');if(name&&name.trim())createLedger(name.trim())});
+document.getElementById('deleteBookBtn').addEventListener('click',async()=>{
+ if(currentRole!=='owner'){alert('只有帳本擁有者可以刪除帳本。');return}
+ if(books.length<=1){alert('至少保留一本帳本。');return}
+ if(!confirm('確定刪除「'+bookLabel()+'」？帳本內所有資料也會一併刪除。'))return;
+ const {error}=await sb.from('ledgers').delete().eq('id',currentBookId);
+ if(error){showToast('刪除失敗：'+error.message);return}
+ currentBookId=null;await loadCloudLedgers();
+});
+
+document.getElementById('loginTab').onclick=()=>setAuthMode('login');
+document.getElementById('signupTab').onclick=()=>setAuthMode('signup');
+function setAuthMode(mode){
+ authMode=mode;document.getElementById('loginTab').classList.toggle('active',mode==='login');
+ document.getElementById('signupTab').classList.toggle('active',mode==='signup');
+ document.getElementById('authSubmit').textContent=mode==='login'?'登入':'建立帳號';
+ document.getElementById('authPassword').autocomplete=mode==='login'?'current-password':'new-password';
+ document.getElementById('authMessage').textContent=mode==='login'?'使用帳號登入，查看你獲邀加入的帳本。':'建立帳號後即可建立自己的帳本或接受邀請。';
+}
+document.getElementById('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!sb){showToast('請先完成 Supabase 雲端設定。');return}
+ const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
+ const button=document.getElementById('authSubmit');
+ const message=document.getElementById('authMessage');
+ button.disabled=true;message.textContent='正在連線並處理，請稍候…';
+ try {
+  const result=authMode==='signup'
+   ? await sb.auth.signUp({email,password})
+   : await sb.auth.signInWithPassword({email,password});
+  if(result.error){message.textContent='操作失敗：'+result.error.message;return}
+  if(authMode==='signup'&&!result.data.session){
+   message.textContent='註冊請求已送出！請到電子郵件收取驗證信，完成驗證後再登入。若沒有收到，請檢查垃圾郵件。';
+   return;
+  }
+  session=result.data.session;await enterApp();
+ } catch(err) {
+  message.textContent='連線發生問題：'+(err?.message||String(err))+'。請確認網路及 Supabase 專案狀態。';
+ } finally {
+  button.disabled=false;
+ }
+});
+async function acceptInvite(token){
+ if(!sb||!session)return;
+ const {data,error}=await sb.rpc('accept_ledger_invite',{invite_token:token});
+ if(error){showToast('加入帳本失敗：'+error.message);return}
+ showToast('已成功加入帳本：'+(data?.ledger_name||'邀請帳本'));
+ await loadCloudLedgers();
+}
+document.getElementById('joinInviteForm').addEventListener('submit',async e=>{
+ e.preventDefault();const token=document.getElementById('inviteToken').value.trim();
+ if(!token)return;
+ if(!session){pendingInviteToken=token;document.getElementById('authMessage').textContent='邀請碼已暫存，請先登入或建立帳號，登入後會自動加入帳本。';return}
+ await acceptInvite(token);
+});
+document.getElementById('inviteBtn').onclick=()=>{showPage('settings');document.getElementById('inviteStatus').textContent='目前帳本：'+bookLabel()+'。在此產生邀請連結。'};
+document.getElementById('createInviteBtn').onclick=async()=>{
+ if(!sb||!currentBookId)return;
+ if(currentRole!=='owner'&&currentRole!=='admin'){showToast('你沒有邀請成員的權限。');return}
+ const {data,error}=await sb.rpc('create_ledger_invite',{target_ledger_id:currentBookId});
+ if(error){showToast('產生邀請失敗：'+error.message);return}
+ lastInviteUrl=location.origin+location.pathname+'?invite='+data;
+ document.getElementById('copyInviteBtn').disabled=false;
+ document.getElementById('inviteStatus').textContent='邀請連結已產生（預設 7 天有效）：'+lastInviteUrl;
+};
+document.getElementById('copyInviteBtn').onclick=async()=>{if(lastInviteUrl){await navigator.clipboard.writeText(lastInviteUrl);showToast('邀請連結已複製，可以傳給對方。')}};
+async function loadMembers(){
+ const box=document.getElementById('memberList');if(!box||!currentBookId)return;
+ const {data,error}=await sb.from('ledger_members').select('user_id,role,created_at').eq('ledger_id',currentBookId);
+ if(error){box.textContent='目前無法讀取成員清單。';return}
+ box.innerHTML=(data||[]).map(m=>`<div class="member-row"><span>${esc(m.user_id===session.user.id?session.user.email:'帳本成員')}</span><b>${m.role==='owner'?'擁有者':m.role==='admin'?'管理員':'成員'}</b></div>`).join('')||'<div class="empty">目前沒有其他成員</div>';
+}
+const oldRender=render;
+render=function(){oldRender();if(sb&&session)loadMembers()};
+document.getElementById('logoutBtn')?.addEventListener('click',async()=>{await sb.auth.signOut();session=null;leaveApp()});
+
+document.getElementById('today').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('txDate').value=new Date().toISOString().slice(0,10);
+fillSelects();document.getElementById('mainApp').style.display='none';
+initCloud().catch(err=>{document.getElementById('authMessage').textContent='初始化失敗：'+(err?.message||String(err));});
+</script>
+</body>
+</html>
