@@ -214,7 +214,8 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
    <div class="help">
     富邦銀行｜簽帳：正職薪資、家庭家用、固定支出與資金管理。<br>
     第一銀行｜金融：外送收入、日常消費、約會與交通。<br>
-    現金錢包：提款、現金收入、實體現金消費。<br><br>
+    現金錢包：提款、現金收入、實體現金消費。<br>
+    中華郵政｜儲蓄：郵政存款、儲蓄與帳戶轉帳。<br><br>
     帳戶轉帳只改變資金所在位置，不列入收入或支出。請勿輸入網銀密碼、完整卡號或安全碼。
    </div>
   </div>
@@ -227,7 +228,8 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
 const ACCOUNTS=[
  {id:'fubon',name:'富邦銀行｜簽帳',short:'富邦簽帳',desc:'主帳戶・正職薪資與資金管理',color:'#A2D0FF',icon:'wallet'},
  {id:'first',name:'第一銀行｜金融',short:'第一金融',desc:'日常帳戶・外送收入與日常消費',color:'#A1D16A',icon:'wallet'},
- {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'實體支付・零用金管理',color:'#A9844A',icon:'cash'}
+ {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'實體支付・零用金管理',color:'#A9844A',icon:'cash'},
+ {id:'post',name:'中華郵政｜儲蓄',short:'郵政儲蓄',desc:'郵政儲蓄・存款與資金管理',color:'#759c7c',icon:'wallet'}
 ];
 const CATS={
  income:['正職薪資','外送兼職','家庭給款','其他收入'],
@@ -237,9 +239,9 @@ const CATS={
 // Supabase 雲端設定：部署前請填入自己的 Project URL 與 anon/publishable key。
 const SUPABASE_URL='https://iesipsgrequpyerpbxpq.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_sVEWajGhKRiOqvJpIgSLdg_CYtVKA_x';
-let sb=null, session=null, books=[], currentBookId=null, state={opening:{fubon:0,first:0,cash:0},transactions:[]};
+let sb=null, session=null, books=[], currentBookId=null, state={opening:{fubon:0,first:0,cash:0,post:0},transactions:[]};
 let currentRole='viewer', lastInviteUrl='', authMode='login', realtimeChannel=null, pendingInviteToken='';
-const blankBookData=()=>({opening:{fubon:0,first:0,cash:0},transactions:[]});
+const blankBookData=()=>({opening:{fubon:0,first:0,cash:0,post:0},transactions:[]});
 function save(){persistCurrentBook()}
 async function persistCurrentBook(){
  if(!sb||!currentBookId)return;
@@ -382,7 +384,7 @@ document.getElementById('filterType').addEventListener('change',()=>document.get
 function exportData(){let blob=new Blob([JSON.stringify({bookName:bookLabel(),...state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personal-finance-'+bookLabel()+'-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)}
 document.getElementById('exportBtn').onclick=exportData;document.getElementById('exportBtn2').onclick=exportData;
 document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=d;save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
-document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state={opening:{fubon:0,first:0,cash:0},transactions:[]};save()}};
+document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state={opening:{fubon:0,first:0,cash:0,post:0},transactions:[]};save()}};
 const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',reports:'財務統計',settings:'資料與設定'};
 function showPage(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('pageTitle').textContent=titles[p];if(p==='transactions')document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions())}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
