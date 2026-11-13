@@ -185,7 +185,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
  <section class="panel" id="accounts">
   <div class="section"><div class="section-title"><h3>我的銀行／帳戶</h3><span class="muted">只影響目前帳本</span></div><div id="accountDetails"></div></div>
   <div class="section"><div class="section-title"><h3>新增帳戶</h3><span class="muted">新增後會出現在記帳與報表中</span></div>
-   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行／帳戶名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：國泰世華銀行"></div><div class="field"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
+   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：中國信託、國泰世華"></div><div class="field"><label>帳戶類型</label><select id="newAccountType"><option value="簽帳">簽帳</option><option value="金融">金融</option><option value="儲蓄">儲蓄</option></select></div><div class="field full"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
   </div>
   <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div class="help">刪除帳戶前，必須先處理該帳戶的所有交易；有交易紀錄的帳戶不能直接刪除，以免遺失歷史資料。</div></div>
   <div class="section"><div class="section-title"><h3>期初餘額設定</h3></div>
@@ -235,6 +235,13 @@ const DEFAULT_ACCOUNTS=[
  {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'實體支付・零用金管理',color:'#A9844A',icon:'cash'},
  {id:'post',name:'中華郵政｜儲蓄',short:'郵政儲蓄',desc:'郵政儲蓄・存款與資金管理',color:'#759c7c',icon:'wallet'}
 ];
+const BANK_COLORS={
+ '富邦銀行':'#A2D0FF','第一銀行':'#A1D16A','中華郵政':'#759c7c',
+ '中國信託':'#C8102E','國泰世華':'#008A65','台新銀行':'#E60012',
+ '玉山銀行':'#006A8E','永豐銀行':'#00A77B','臺灣銀行':'#8B5BA5',
+ '合作金庫':'#008B68','兆豐銀行':'#f1c232','華南銀行':'#D71920',
+ '王道銀行':'#E87532'
+};
 let ACCOUNTS=DEFAULT_ACCOUNTS.map(a=>({...a}));
 const blankBookData=()=>({accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),opening:{fubon:0,first:0,cash:0,post:0},transactions:[]});
 function normalizeBookData(data){
@@ -363,7 +370,7 @@ function render(){
  document.getElementById('recentTable').innerHTML=transactionRows(sorted.slice(0,8));
  document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions());
  document.getElementById('txCount').textContent=state.transactions.length+' 筆';
- document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div></div><button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join('');
+ document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>{const bank=a.name.split('｜')[0],type=a.name.split('｜')[1]||'簽帳';return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div><select aria-label="變更帳戶類型" style="margin-top:7px;max-width:130px" onchange="changeAccountType('${a.id}',this.value)"><option value="簽帳" ${type==='簽帳'?'selected':''}>簽帳</option><option value="金融" ${type==='金融'?'selected':''}>金融</option><option value="儲蓄" ${type==='儲蓄'?'selected':''}>儲蓄</option></select></div><button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button></div>`}).join('');
  document.getElementById('openingFields').innerHTML=ACCOUNTS.map(a=>`<div class="field"><label>${a.name}期初餘額</label><input type="number" min="0" step="1" name="${a.id}" value="${Number(state.opening[a.id]||0)}"></div>`).join('');
  document.getElementById('allIncome').textContent=money(sumType(state.transactions,'income'));
  document.getElementById('allExpense').textContent=money(sumType(state.transactions,'expense'));
@@ -396,18 +403,26 @@ window.editTx=editTx;window.deleteTx=deleteTx;
 document.getElementById('openingForm').addEventListener('submit',e=>{e.preventDefault();let fd=new FormData(e.target);ACCOUNTS.forEach(a=>state.opening[a.id]=Number(fd.get(a.id)||0));save();alert('期初餘額已更新')});
 document.getElementById('accountForm').addEventListener('submit',e=>{
  e.preventDefault();
- const name=document.getElementById('newAccountName').value.trim();
+ const bank=document.getElementById('newAccountName').value.trim().replace(/｜(簽帳|金融|儲蓄)$/,'');
+ const type=document.getElementById('newAccountType').value;
+ const name=bank+'｜'+type;
  const desc=document.getElementById('newAccountDesc').value.trim();
- if(!name)return;
+ if(!bank)return;
  if(ACCOUNTS.some(a=>a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');return}
- const preset=DEFAULT_ACCOUNTS.find(a=>a.name.toLowerCase()===name.toLowerCase());
+ const preset=DEFAULT_ACCOUNTS.find(a=>a.name.split('｜')[0]===bank);
  const id=preset?preset.id:'acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
- const palette=['#8FB8D8','#B49AD8','#D5A36A','#7FB7A1','#D58D9B','#9AA6B2'];
- const color=preset?preset.color:'#9AA6B2';
- const account=preset?{...preset,desc:desc||preset.desc}:{id,name,short:name.length>8?name.slice(0,8):name,desc:desc||'自訂帳戶',color,icon:'wallet'};
+ const color=BANK_COLORS[bank]||'#9AA6B2';
+ const account={id,name,short:(bank+' '+type).slice(0,8),desc:desc||(preset?preset.desc:'自訂帳戶'),color,icon:'wallet'};
  state.accounts.push(account);
- state.opening[id]=0;syncAccounts();save();e.target.reset();alert(preset?'已新增帳戶，並恢復原本的專屬顏色：'+name:'已新增帳戶：'+name);
+ state.opening[id]=0;syncAccounts();save();e.target.reset();alert('已新增帳戶：'+name);
 });
+function changeAccountType(id,type){
+ const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
+ const bank=account.name.split('｜')[0],name=bank+'｜'+type;
+ if(ACCOUNTS.some(a=>a.id!==id&&a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');render();return}
+ account.name=name;account.short=(bank+' '+type).slice(0,8);save();render();
+}
+window.changeAccountType=changeAccountType;
 function deleteAccount(id){
  const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
  if(ACCOUNTS.length<=1){alert('至少要保留一個帳戶。');return}
