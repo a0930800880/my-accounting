@@ -183,7 +183,11 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
  </section>
 
  <section class="panel" id="accounts">
-  <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div id="accountDetails"></div></div>
+  <div class="section"><div class="section-title"><h3>我的銀行／帳戶</h3><span class="muted">只影響目前帳本</span></div><div id="accountDetails"></div></div>
+  <div class="section"><div class="section-title"><h3>新增帳戶</h3><span class="muted">新增後會出現在記帳與報表中</span></div>
+   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行／帳戶名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：國泰世華銀行"></div><div class="field"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
+  </div>
+  <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div class="help">刪除帳戶前，必須先處理該帳戶的所有交易；有交易紀錄的帳戶不能直接刪除，以免遺失歷史資料。</div></div>
   <div class="section"><div class="section-title"><h3>期初餘額設定</h3></div>
    <div class="help">第一次使用時，請輸入目前各帳戶的實際餘額。期初餘額不是收入，之後的交易會從這個數字開始計算。</div>
    <form id="openingForm" style="margin-top:14px"><div class="form-grid" id="openingFields"></div><div class="actions"><button class="btn primary">儲存期初餘額</button></div></form>
@@ -225,12 +229,23 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const ACCOUNTS=[
+const DEFAULT_ACCOUNTS=[
  {id:'fubon',name:'富邦銀行｜簽帳',short:'富邦簽帳',desc:'主帳戶・正職薪資與資金管理',color:'#A2D0FF',icon:'wallet'},
  {id:'first',name:'第一銀行｜金融',short:'第一金融',desc:'日常帳戶・外送收入與日常消費',color:'#A1D16A',icon:'wallet'},
  {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'實體支付・零用金管理',color:'#A9844A',icon:'cash'},
  {id:'post',name:'中華郵政｜儲蓄',short:'郵政儲蓄',desc:'郵政儲蓄・存款與資金管理',color:'#759c7c',icon:'wallet'}
 ];
+let ACCOUNTS=DEFAULT_ACCOUNTS.map(a=>({...a}));
+const blankBookData=()=>({accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),opening:{fubon:0,first:0,cash:0,post:0},transactions:[]});
+function normalizeBookData(data){
+ const d=data&&typeof data==='object'?data:{};
+ d.accounts=Array.isArray(d.accounts)&&d.accounts.length?d.accounts:DEFAULT_ACCOUNTS.map(a=>({...a}));
+ d.opening=d.opening&&typeof d.opening==='object'?d.opening:{};
+ d.accounts.forEach(a=>{if(!Object.prototype.hasOwnProperty.call(d.opening,a.id))d.opening[a.id]=0});
+ d.transactions=Array.isArray(d.transactions)?d.transactions:[];
+ return d;
+}
+function syncAccounts(){ACCOUNTS=state.accounts;fillSelects()}
 const CATS={
  income:['正職薪資','外送兼職','家庭給款','其他收入'],
  expense:['家庭家用','日常生活','電信費用','飲食','約會規劃','娛樂支出','交通費用','額外吃食','個人購物','機車維修','其他支出'],
@@ -239,9 +254,8 @@ const CATS={
 // Supabase 雲端設定：部署前請填入自己的 Project URL 與 anon/publishable key。
 const SUPABASE_URL='https://iesipsgrequpyerpbxpq.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_sVEWajGhKRiOqvJpIgSLdg_CYtVKA_x';
-let sb=null, session=null, books=[], currentBookId=null, state={opening:{fubon:0,first:0,cash:0,post:0},transactions:[]};
+let sb=null, session=null, books=[], currentBookId=null, state=blankBookData();
 let currentRole='viewer', lastInviteUrl='', authMode='login', realtimeChannel=null, pendingInviteToken='';
-const blankBookData=()=>({opening:{fubon:0,first:0,cash:0,post:0},transactions:[]});
 function save(){persistCurrentBook()}
 async function persistCurrentBook(){
  if(!sb||!currentBookId)return;
@@ -261,7 +275,7 @@ async function loadCurrentLedger(){
  currentRole=book.role||'viewer';
  const {data,error}=await sb.from('ledger_data').select('data').eq('ledger_id',currentBookId).maybeSingle();
  if(error){showToast('讀取帳本失敗：'+error.message);return}
- state=data?.data||blankBookData();renderBookSelect();render();
+ state=normalizeBookData(data?.data||blankBookData());syncAccounts();renderBookSelect();render();
  subscribeLedger();
 }
 async function loadCloudLedgers(){
@@ -287,7 +301,7 @@ async function createLedger(name){
 function subscribeLedger(){
  if(realtimeChannel)sb.removeChannel(realtimeChannel);
  realtimeChannel=sb.channel('ledger-data-'+currentBookId).on('postgres_changes',{event:'UPDATE',schema:'public',table:'ledger_data',filter:'ledger_id=eq.'+currentBookId},payload=>{
-  if(payload.new?.data){state=payload.new.data;render()}
+  if(payload.new?.data){state=normalizeBookData(payload.new.data);syncAccounts();render()}
  }).subscribe();
 }
 async function initCloud(){
@@ -337,6 +351,7 @@ function transactionRows(list){
  }).join('')}</tbody></table></div>`
 }
 function render(){
+ fillSelects();
  document.getElementById('totalAssets').textContent=money(totals());
   const bookNameEl=document.getElementById('dashboardBookName');if(bookNameEl)bookNameEl.textContent='帳本：'+bookLabel();
   renderBookSelect();
@@ -348,7 +363,7 @@ function render(){
  document.getElementById('recentTable').innerHTML=transactionRows(sorted.slice(0,8));
  document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions());
  document.getElementById('txCount').textContent=state.transactions.length+' 筆';
- document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${a.name}</b><div class="muted">${a.desc}</div></div><b>${money(balance(a.id))}</b></div>`).join('');
+ document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div></div><button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join('');
  document.getElementById('openingFields').innerHTML=ACCOUNTS.map(a=>`<div class="field"><label>${a.name}期初餘額</label><input type="number" min="0" step="1" name="${a.id}" value="${Number(state.opening[a.id]||0)}"></div>`).join('');
  document.getElementById('allIncome').textContent=money(sumType(state.transactions,'income'));
  document.getElementById('allExpense').textContent=money(sumType(state.transactions,'expense'));
@@ -379,12 +394,34 @@ function editTx(id){let t=state.transactions.find(x=>x.id===id);if(!t)return;let
 function deleteTx(id){if(!confirm('確定刪除這筆交易？刪除後帳戶餘額會重新計算。'))return;state.transactions=state.transactions.filter(t=>t.id!==id);save()}
 window.editTx=editTx;window.deleteTx=deleteTx;
 document.getElementById('openingForm').addEventListener('submit',e=>{e.preventDefault();let fd=new FormData(e.target);ACCOUNTS.forEach(a=>state.opening[a.id]=Number(fd.get(a.id)||0));save();alert('期初餘額已更新')});
+document.getElementById('accountForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const name=document.getElementById('newAccountName').value.trim();
+ const desc=document.getElementById('newAccountDesc').value.trim();
+ if(!name)return;
+ if(ACCOUNTS.some(a=>a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');return}
+ const id='acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
+ const palette=['#8FB8D8','#B49AD8','#D5A36A','#7FB7A1','#D58D9B','#9AA6B2'];
+ const color=palette[ACCOUNTS.length%palette.length];
+ state.accounts.push({id,name,short:name.length>8?name.slice(0,8):name,desc:desc||'自訂帳戶',color,icon:'wallet'});
+ state.opening[id]=0;syncAccounts();save();e.target.reset();alert('已新增帳戶：'+name);
+});
+function deleteAccount(id){
+ const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
+ if(ACCOUNTS.length<=1){alert('至少要保留一個帳戶。');return}
+ const used=state.transactions.some(t=>t.account===id||t.from===id||t.to===id);
+ if(used){alert('「'+account.name+'」仍有交易紀錄，為避免歷史資料遺失，暫時不能刪除。請先處理該帳戶的交易紀錄。');return}
+ if(!confirm('確定刪除帳戶「'+account.name+'」？'))return;
+ state.accounts=state.accounts.filter(a=>a.id!==id);delete state.opening[id];syncAccounts();save();
+}
+window.deleteAccount=deleteAccount;
+
 document.getElementById('filterAccount').addEventListener('change',()=>document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions()));
 document.getElementById('filterType').addEventListener('change',()=>document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions()));
 function exportData(){let blob=new Blob([JSON.stringify({bookName:bookLabel(),...state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='personal-finance-'+bookLabel()+'-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url)}
 document.getElementById('exportBtn').onclick=exportData;document.getElementById('exportBtn2').onclick=exportData;
-document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=d;save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
-document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state={opening:{fubon:0,first:0,cash:0,post:0},transactions:[]};save()}};
+document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=normalizeBookData(d);syncAccounts();save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
+document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state=normalizeBookData({...blankBookData(),accounts:ACCOUNTS.map(a=>({...a}))});syncAccounts();save()}};
 const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',reports:'財務統計',settings:'資料與設定'};
 function showPage(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('pageTitle').textContent=titles[p];if(p==='transactions')document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions())}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
