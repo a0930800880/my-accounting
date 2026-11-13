@@ -410,7 +410,7 @@ document.getElementById('accountForm').addEventListener('submit',e=>{
  if(!bank)return;
  if(ACCOUNTS.some(a=>a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');return}
  const preset=DEFAULT_ACCOUNTS.find(a=>a.name.split('｜')[0]===bank);
- const id=preset?preset.id:'acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
+ const id=preset&&!ACCOUNTS.some(a=>a.id===preset.id)?preset.id:'acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
  const color=BANK_COLORS[bank]||'#9AA6B2';
  const account={id,name,short:(bank+' '+type).slice(0,8),desc:desc||(preset?preset.desc:'自訂帳戶'),color,icon:'wallet'};
  state.accounts.push(account);
