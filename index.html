@@ -201,7 +201,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
  <section class="panel" id="accounts">
   <div class="section"><div class="section-title"><h3>我的銀行／帳戶</h3><span class="muted">只影響目前帳本</span></div><div id="accountDetails"></div></div>
   <div class="section"><div class="section-title"><h3>新增帳戶</h3><span class="muted">新增後會出現在記帳與報表中</span></div>
-   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：中國信託、國泰世華"></div><div class="field" id="accountTypeField"><label>帳戶類型</label><select id="newAccountType"><option value="簽帳">簽帳</option><option value="金融">金融</option><option value="儲蓄">儲蓄</option><option value="信用">信用</option><option value="貨幣" hidden>貨幣</option></select></div><div class="field full"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
+   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：中國信託、國泰世華"></div><div class="field" id="accountTypeField"><label>帳戶類型</label><select id="newAccountType"><option value="簽帳">簽帳</option><option value="金融">金融</option><option value="儲蓄">儲蓄</option><option value="信用">信用</option><option value="現金" hidden >現金</option></select></div><div class="field full"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
   </div>
   <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div class="help">刪除帳戶前，必須先處理該帳戶的所有交易；有交易紀錄的帳戶不能直接刪除，以免遺失歷史資料。</div></div>
   <div class="section"><div class="section-title"><h3>期初餘額設定</h3></div>
@@ -234,7 +234,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
    <div class="help">
     富邦銀行｜簽帳：正職薪資、家庭家用、固定支出與資金管理。<br>
     第一銀行｜金融：外送收入、日常消費、約會與交通。<br>
-    實體錢包｜貨幣：提款、現金收入、實體現金消費。<br>
+    現金錢包｜現金：提款、現金收入、實體現金消費。<br>
     中華郵政｜儲蓄：郵政存款、儲蓄與帳戶轉帳。<br><br>
     帳戶轉帳只改變資金所在位置，不列入收入或支出。請勿輸入網銀密碼、完整卡號或安全碼。
    </div>
@@ -248,7 +248,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
 const DEFAULT_ACCOUNTS=[
  {id:'fubon',name:'富邦銀行｜簽帳',short:'富邦簽帳',desc:'主帳戶・正職薪資與資金管理',color:'#A2D0FF',icon:'wallet'},
  {id:'first',name:'第一銀行｜金融',short:'第一金融',desc:'日常帳戶・外送收入與日常消費',color:'#A1D16A',icon:'wallet'},
- {id:'cash',name:'實體錢包｜貨幣',short:'實體錢包',desc:'實體支付・現金與零錢管理',color:'#A9844A',icon:'cash'},
+ {id:'cash',name:'現金錢包｜現金',short:'現金錢包',desc:'現金支付・現金與零錢管理',color:'#A9844A',icon:'cash'},
  {id:'post',name:'中華郵政｜儲蓄',short:'郵政儲蓄',desc:'郵政儲蓄・存款與資金管理',color:'#759c7c',icon:'wallet'}
 ];
 const BANK_COLORS={
@@ -267,8 +267,8 @@ function normalizeBookData(data){
  d.accounts.forEach(a=>{
   if(!Object.prototype.hasOwnProperty.call(d.opening,a.id))d.opening[a.id]=0;
   const bank=String(a.name||'').split('｜')[0].trim();
-  if(a.id==='cash'||['現金','現金錢包','實體錢包'].includes(bank)){
-   a.name='實體錢包｜貨幣';a.short='實體錢包';a.desc='實體支付・現金與零錢管理';a.icon='cash';
+  if(a.id==='cash'||['現金','現金錢包','現金錢包'].includes(bank)){
+   a.name='現金錢包｜現金';a.short='現金錢包';a.desc='現金支付・現金與零錢管理';a.icon='cash';
   }
  });
  d.transactions=Array.isArray(d.transactions)?d.transactions:[];
@@ -392,7 +392,7 @@ function render(){
  document.getElementById('recentTable').innerHTML=transactionRows(sorted.slice(0,8));
  document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions());
  document.getElementById('txCount').textContent=state.transactions.length+' 筆';
- document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>{const bank=a.name.split('｜')[0];if(['現金','現金錢包','實體錢包'].includes(bank)){a.name='實體錢包｜貨幣';a.short='實體錢包';a.desc='實體支付・現金與零錢管理'}const type=a.name.split('｜')[1]||'簽帳';return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div>${['現金','現金錢包','實體錢包'].includes(bank)?'<div class="muted" style="margin-top:7px">帳戶類型：貨幣（固定）</div>':`<select aria-label="變更帳戶類型" style="margin-top:7px;max-width:130px" onchange="changeAccountType('${a.id}',this.value)"><option value="簽帳" ${type==='簽帳'?'selected':''}>簽帳</option><option value="金融" ${type==='金融'?'selected':''}>金融</option><option value="儲蓄" ${type==='儲蓄'?'selected':''}>儲蓄</option><option value="信用" ${type==='信用'?'selected':''}>信用</option></select>`}</div>${a.id==='cash'||['現金','現金錢包','實體錢包'].includes(bank)?'<span class="muted" style="font-size:13px">必要帳戶</span>':`<button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button>`}</div>`}).join('');
+ document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>{const bank=a.name.split('｜')[0];if(['現金','現金錢包','現金錢包'].includes(bank)){a.name='現金錢包｜現金';a.short='現金錢包';a.desc='現金支付・現金與零錢管理'}const type=a.name.split('｜')[1]||'簽帳';return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div>${['現金','現金錢包','現金錢包'].includes(bank)?'<div class="muted" style="margin-top:7px">帳戶類型：現金（固定）</div>':`<select aria-label="變更帳戶類型" style="margin-top:7px;max-width:130px" onchange="changeAccountType('${a.id}',this.value)"><option value="簽帳" ${type==='簽帳'?'selected':''}>簽帳</option><option value="金融" ${type==='金融'?'selected':''}>金融</option><option value="儲蓄" ${type==='儲蓄'?'selected':''}>儲蓄</option><option value="信用" ${type==='信用'?'selected':''}>信用</option></select>`}</div>${a.id==='cash'||['現金','現金錢包','現金錢包'].includes(bank)?'<span class="muted" style="font-size:13px">必要帳戶</span>':`<button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button>`}</div>`}).join('');
  document.getElementById('openingFields').innerHTML=ACCOUNTS.map(a=>`<div class="field"><label>${a.name}期初餘額</label><input type="number" min="0" step="1" name="${a.id}" value="${Number(state.opening[a.id]||0)}"></div>`).join('');
  document.getElementById('allIncome').textContent=money(sumType(state.transactions,'income'));
  document.getElementById('allExpense').textContent=money(sumType(state.transactions,'expense'));
@@ -423,10 +423,10 @@ function editTx(id){let t=state.transactions.find(x=>x.id===id);if(!t)return;let
 function deleteTx(id){if(!confirm('確定刪除這筆交易？刪除後帳戶餘額會重新計算。'))return;state.transactions=state.transactions.filter(t=>t.id!==id);save()}
 window.editTx=editTx;window.deleteTx=deleteTx;
 document.getElementById('openingForm').addEventListener('submit',e=>{e.preventDefault();let fd=new FormData(e.target);ACCOUNTS.forEach(a=>state.opening[a.id]=Number(fd.get(a.id)||0));save();alert('期初餘額已更新')});
-function isCashAccountName(value){return ['現金','現金錢包','實體錢包'].includes(String(value||'').trim());}
+function isCashAccountName(value){return ['現金','現金錢包','現金錢包'].includes(String(value||'').trim());}
 document.getElementById('newAccountName').addEventListener('input',e=>{
  const cash=isCashAccountName(e.target.value);
- const field=document.getElementById('accountTypeField'),select=document.getElementById('newAccountType'),cashOption=select.querySelector('option[value="貨幣"]');
+ const field=document.getElementById('accountTypeField'),select=document.getElementById('newAccountType'),cashOption=select.querySelector('option[value="現金"]');
  field.hidden=cash;
  cashOption.hidden=!cash;
  if(cash)select.value='貨幣';else if(select.value==='貨幣')select.value='簽帳';
@@ -434,22 +434,22 @@ document.getElementById('newAccountName').addEventListener('input',e=>{
 document.getElementById('accountForm').addEventListener('submit',e=>{
  e.preventDefault();
  const bank=document.getElementById('newAccountName').value.trim().replace(/｜(簽帳|金融|儲蓄|信用|現金|貨幣)$/,'');
- const type=isCashAccountName(bank)?'貨幣':document.getElementById('newAccountType').value;
- const name=(isCashAccountName(bank)?'實體錢包':bank)+'｜'+type;
+ const type=isCashAccountName(bank)?'現金':document.getElementById('newAccountType').value;
+ const name=(isCashAccountName(bank)?'現金錢包':bank)+'｜'+type;
  const desc=document.getElementById('newAccountDesc').value.trim();
  if(!bank)return;
  if(ACCOUNTS.some(a=>a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');return}
  const preset=DEFAULT_ACCOUNTS.find(a=>a.name.split('｜')[0]===bank);
  const id=preset&&!ACCOUNTS.some(a=>a.id===preset.id)?preset.id:'acct_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now()));
  const color=BANK_COLORS[bank]||'#9AA6B2';
- const account={id,name,short:((isCashAccountName(bank)?'實體錢包':bank)+' '+type).slice(0,8),desc:desc||(preset?preset.desc:'自訂帳戶'),color,icon:'wallet'};
+ const account={id,name,short:((isCashAccountName(bank)?'現金錢包':bank)+' '+type).slice(0,8),desc:desc||(preset?preset.desc:'自訂帳戶'),color,icon:'wallet'};
  state.accounts.push(account);
  state.opening[id]=0;syncAccounts();save();e.target.reset();alert('已新增帳戶：'+name);
 });
 function changeAccountType(id,type){
  const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
  const bank=account.name.split('｜')[0];
- if(['現金','現金錢包','實體錢包'].includes(bank)){account.name='實體錢包｜貨幣';account.short='實體錢包';save();render();return}
+ if(['現金','現金錢包','現金錢包'].includes(bank)){account.name='現金錢包｜現金';account.short='現金錢包';save();render();return}
  const name=bank+'｜'+type;
  if(ACCOUNTS.some(a=>a.id!==id&&a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');render();return}
  account.name=name;account.short=(bank+' '+type).slice(0,8);save();render();
@@ -457,7 +457,7 @@ function changeAccountType(id,type){
 window.changeAccountType=changeAccountType;
 function deleteAccount(id){
  const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
- if(id==='cash'||['現金','現金錢包','實體錢包'].includes(account.name.split('｜')[0])){alert('現金錢包是必要帳戶，不能刪除。');return}
+ if(id==='cash'||['現金','現金錢包','現金錢包'].includes(account.name.split('｜')[0])){alert('現金錢包是必要帳戶，不能刪除。');return}
  if(ACCOUNTS.length<=1){alert('至少要保留一個帳戶。');return}
  const used=state.transactions.some(t=>t.account===id||t.from===id||t.to===id);
  if(used){alert('「'+account.name+'」仍有交易紀錄，為避免歷史資料遺失，暫時不能刪除。請先處理該帳戶的交易紀錄。');return}
