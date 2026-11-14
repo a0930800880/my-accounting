@@ -379,7 +379,7 @@ function balance(id){let b=Number(state.opening[id]||0);state.transactions.forEa
 function totals(){return ACCOUNTS.reduce((s,a)=>s+balance(a.id),0)}
 function monthTx(){let m=new Date().toISOString().slice(0,7);return state.transactions.filter(t=>t.date?.startsWith(m))}
 function sumType(arr,type){return arr.filter(t=>t.type===type).reduce((s,t)=>s+t.amount,0)}
-function accountName(id){return ACCOUNTS.find(a=>a.id===id)?.short||id}
+function accountName(id){return ACCOUNTS.find(a=>a.id===id)?.name||id}
 function typeName(t){return {income:'收入',expense:'支出',transfer:'轉帳'}[t]||t}
 function transactionRows(list){
  if(!list.length)return '<div class="empty">目前沒有交易紀錄</div>';
