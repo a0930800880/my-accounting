@@ -258,7 +258,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
 const DEFAULT_ACCOUNTS=[
  {id:'fubon',name:'富邦銀行｜簽帳',short:'富邦簽帳',desc:'主帳戶・正職薪資與資金管理',color:'#A2D0FF',icon:'wallet'},
  {id:'first',name:'第一銀行｜金融',short:'第一金融',desc:'日常帳戶・外送收入與日常消費',color:'#A1D16A',icon:'wallet'},
- {id:'cash',name:'實體錢包｜現金',short:'實體錢包',desc:'實體支付・現金與零錢管理',color:'#A9844A',icon:'cash'},
+ {id:'cash',name:'實體錢包｜支付',short:'實體錢包',desc:'實體支付・現金與零錢管理',color:'#A9844A',icon:'cash'},
  {id:'post',name:'中華郵政｜儲蓄',short:'郵政儲蓄',desc:'郵政儲蓄・存款與資金管理',color:'#759c7c',icon:'wallet'}
 ];
 const BANK_COLORS={
@@ -278,7 +278,7 @@ function normalizeBookData(data){
   if(!Object.prototype.hasOwnProperty.call(d.opening,a.id))d.opening[a.id]=0;
   const bank=String(a.name||'').split('｜')[0].trim();
   if(a.id==='cash'||isCashAccountName(bank)){
-   a.name='實體錢包｜現金';a.short='實體錢包';a.desc='實體支付・現金與零錢管理';a.icon='cash';
+   a.name='實體錢包｜支付';a.short='實體錢包';a.desc='實體支付・現金與零錢管理';a.icon='cash';
   }
  });
  d.transactions=Array.isArray(d.transactions)?d.transactions:[];
@@ -402,7 +402,7 @@ function render(){
  document.getElementById('recentTable').innerHTML=transactionRows(sorted.slice(0,8));
  document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions());
  document.getElementById('txCount').textContent=state.transactions.length+' 筆';
- document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>{const bank=a.name.split('｜')[0];if(isCashAccountName(bank)){a.name='實體錢包｜現金';a.short='實體錢包';a.desc='實體支付・現金與零錢管理'}const type=a.name.split('｜')[1]||'簽帳';return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div>${isCashAccountName(bank)?'<div class="muted" style="margin-top:7px">帳戶類型：支付（固定）</div>':`<select aria-label="變更帳戶類型" style="margin-top:7px;max-width:130px" onchange="changeAccountType('${a.id}',this.value)"><option value="簽帳" ${type==='簽帳'?'selected':''}>簽帳</option><option value="金融" ${type==='金融'?'selected':''}>金融</option><option value="儲蓄" ${type==='儲蓄'?'selected':''}>儲蓄</option><option value="信用" ${type==='信用'?'selected':''}>信用</option></select>`}</div>${a.id==='cash'||isCashAccountName(bank)?'<span class="muted" style="font-size:13px">必要帳戶</span>':`<button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button>`}</div>`}).join('');
+ document.getElementById('accountDetails').innerHTML=ACCOUNTS.map(a=>{const bank=a.name.split('｜')[0];if(isCashAccountName(bank)){a.name='實體錢包｜支付';a.short='實體錢包';a.desc='實體支付・現金與零錢管理'}const type=a.name.split('｜')[1]||'簽帳';return `<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 2px;border-bottom:1px solid var(--line)"><div><b>${esc(a.name)}</b><div class="muted">${esc(a.desc||'')}</div><div class="muted">餘額：${money(balance(a.id))}</div>${isCashAccountName(bank)?'<div class="muted" style="margin-top:7px">帳戶類型：支付（固定）</div>':`<select aria-label="變更帳戶類型" style="margin-top:7px;max-width:130px" onchange="changeAccountType('${a.id}',this.value)"><option value="簽帳" ${type==='簽帳'?'selected':''}>簽帳</option><option value="金融" ${type==='金融'?'selected':''}>金融</option><option value="儲蓄" ${type==='儲蓄'?'selected':''}>儲蓄</option><option value="信用" ${type==='信用'?'selected':''}>信用</option></select>`}</div>${a.id==='cash'||isCashAccountName(bank)?'<span class="muted" style="font-size:13px">必要帳戶</span>':`<button class="btn danger" type="button" onclick="deleteAccount('${a.id}')">刪除</button>`}</div>`}).join('');
  document.getElementById('openingFields').innerHTML=ACCOUNTS.map(a=>`<div class="field"><label>${a.name}期初餘額</label><input type="number" min="0" step="1" name="${a.id}" value="${Number(state.opening[a.id]||0)}"></div>`).join('');
  document.getElementById('allIncome').textContent=money(sumType(state.transactions,'income'));
  document.getElementById('allExpense').textContent=money(sumType(state.transactions,'expense'));
@@ -458,7 +458,7 @@ document.getElementById('accountForm').addEventListener('submit',e=>{
 function changeAccountType(id,type){
  const account=ACCOUNTS.find(a=>a.id===id);if(!account)return;
  const bank=account.name.split('｜')[0];
- if(isCashAccountName(bank)){account.name='實體錢包｜現金';account.short='實體錢包';save();render();return}
+ if(isCashAccountName(bank)){account.name='實體錢包｜支付';account.short='實體錢包';save();render();return}
  const name=bank+'｜'+type;
  if(ACCOUNTS.some(a=>a.id!==id&&a.name.toLowerCase()===name.toLowerCase())){alert('已經有相同名稱的帳戶。');render();return}
  account.name=name;account.short=(bank+' '+type).slice(0,8);save();render();
