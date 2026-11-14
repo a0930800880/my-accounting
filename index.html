@@ -201,7 +201,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
  <section class="panel" id="accounts">
   <div class="section"><div class="section-title"><h3>我的銀行／帳戶</h3><span class="muted">只影響目前帳本</span></div><div id="accountDetails"></div></div>
   <div class="section"><div class="section-title"><h3>新增帳戶</h3><span class="muted">新增後會出現在記帳與報表中</span></div>
-   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：中國信託、國泰世華"></div><div class="field" id="accountTypeField"><label>帳戶類型</label><select id="newAccountType"><option value="簽帳">簽帳</option><option value="金融">金融</option><option value="儲蓄">儲蓄</option><option value="信用">信用</option><option value="現金" hidden >現金</option></select></div><div class="field full"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
+   <form id="accountForm"><div class="form-grid"><div class="field"><label>銀行名稱</label><input id="newAccountName" maxlength="40" required placeholder="例如：中國信託、國泰世華"></div><div class="field" id="accountTypeField"><label>帳戶類型</label><select id="newAccountType"><option value="簽帳">簽帳</option><option value="金融">金融</option><option value="儲蓄">儲蓄</option><option value="信用">信用</option></select></div><div class="field full"><label>用途說明（選填）</label><input id="newAccountDesc" maxlength="60" placeholder="例如：薪資與日常支出"></div></div><div class="actions"><button class="btn primary" type="submit">＋ 新增帳戶</button></div></form>
   </div>
   <div class="section"><div class="section-title"><h3>帳戶餘額</h3><span class="muted">依交易自動計算</span></div><div class="help">刪除帳戶前，必須先處理該帳戶的所有交易；有交易紀錄的帳戶不能直接刪除，以免遺失歷史資料。</div></div>
   <div class="section"><div class="section-title"><h3>期初餘額設定</h3></div>
@@ -426,10 +426,9 @@ document.getElementById('openingForm').addEventListener('submit',e=>{e.preventDe
 function isCashAccountName(value){return ['現金','現金錢包','現金錢包'].includes(String(value||'').trim());}
 document.getElementById('newAccountName').addEventListener('input',e=>{
  const cash=isCashAccountName(e.target.value);
- const field=document.getElementById('accountTypeField'),select=document.getElementById('newAccountType'),cashOption=select.querySelector('option[value="現金"]');
- field.hidden=cash;
- cashOption.hidden=!cash;
- if(cash)select.value='現金';else if(select.value==='現金')select.value='簽帳';
+ const field=document.getElementById('accountTypeField'),select=document.getElementById('newAccountType');
+  field.hidden=cash;
+  if(cash)select.value='簽帳';
 });
 document.getElementById('accountForm').addEventListener('submit',e=>{
  e.preventDefault();
