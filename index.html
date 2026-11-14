@@ -429,7 +429,7 @@ document.getElementById('newAccountName').addEventListener('input',e=>{
  const field=document.getElementById('accountTypeField'),select=document.getElementById('newAccountType'),cashOption=select.querySelector('option[value="現金"]');
  field.hidden=cash;
  cashOption.hidden=!cash;
- if(cash)select.value='貨幣';else if(select.value==='貨幣')select.value='簽帳';
+ if(cash)select.value='現金';else if(select.value==='現金')select.value='簽帳';
 });
 document.getElementById('accountForm').addEventListener('submit',e=>{
  e.preventDefault();
