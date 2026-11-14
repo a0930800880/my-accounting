@@ -69,7 +69,8 @@ h2{font-size:25px;margin:5px 0 0}
 .metric .m-value{font-size:22px;font-weight:750;margin-top:8px}
 .income{color:#27865B}.expense{color:var(--red)}
 .section{margin-bottom:18px}
-.goal-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:12px}
+.mascot-card{display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}.mascot-caption{font-size:15px;font-weight:750;color:var(--ink)}.mascot-photo{display:block;width:min(100%,420px);max-height:78vh;object-fit:contain;border-radius:12px}
+ .goal-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px;margin-bottom:12px}
 .goal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .goal-name{font-size:15px;font-weight:750}
 .goal-amounts{display:flex;gap:18px;flex-wrap:wrap;margin-top:13px}
@@ -167,6 +168,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
   <button data-page="goals">◎　存錢目標</button>
   <button data-page="reports">◎　財務統計</button>
   <button data-page="settings">⚙　資料與設定</button>
+  <button data-page="mascot">◎　吉祥物</button>
  </nav>
  <div class="sidebar-note">私人財務管理工具<br>帳本資料儲存在雲端資料庫。</div>
 </aside>
@@ -215,7 +217,14 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
   <div class="help">存錢目標的累積金額由你自行更新，僅用來追蹤目標進度，不會自動扣除或增加銀行／帳戶餘額。</div>
  </section>
 
- <section class="panel" id="transactions">
+ <section class="panel" id="mascot">
+   <div class="mascot-card">
+    <div class="mascot-caption">燦燦今天也在陪你記帳 🐾</div>
+    <img class="mascot-photo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDACweISchHCwnJCcyLyw1Qm9IQj09QohhZlBvoY2ppp6Nm5ixx//Ysbzxv5ib3v/g8f//////rNX/////////////2wBDAS8yMkI6QoJISIL/t5u3////////////////////////////////////////////////////////////////////wgARCAEOAJEDASIAAhEBAxEB/8QAGAAAAwEBAAAAAAAAAAAAAAAAAAECAwT/xAAWAQEBAQAAAAAAAAAAAAAAAAAAAQL/2gAMAwEAAhADEAAAAdUapjVMAQAA0wAE5S0nIKlElBy7c/TRnpMsEzZRAWQFuNh6S82ZnLU6DnZuYAdOesTNTK+feq5DebMqvWM9biUTgzz3mzIsqCw6HNSopxBUremWthGiTJsmolyjpMAAAEFU2qiJuVNctEctWSZktJooGACABOmOlpcTFyoNLx1KU51WdES5DSstCgEAAVJeZUqulvGWzdcuW+JnTZSoibizRpgAiqbrGdrUccp11ws7OfZnMbRCGE2rGAgATrydVK5kXJ04LLVmzzZcpgDgqZrVZEmpkGPXjrWmWkGcai4vQJdAmEMTHF1XIVKABrtjuPPXIkBQCACgAYAXCGmwEJG2OxeemZCYACgAAA0wmkGZKMQX0c/WKBEAAAoAAAxMJqTIlJZId1CkyTm0AAQMQrEwAAAxXTzSICu+WYkZ6ZbqaBuXDApDAYAIN4m8TnOkqdIvLPLbHdQFKpcMUmhNDRnVkkVeWkaECbNEHPtnq5gVLCHJJq3JMUgEFVFmhAf/xAAfEAACAQUBAQEBAAAAAAAAAAAAARECEBIgMDEhQEH/2gAIAQEAAQUChRF4I3xPNk8rySZEk6SZIn6TopKbfdPp9Julf6SZMyYmLyzkkkkm8Xq0kQtHokKnR6pWd4MDAwKaY1gxZizFmL1jV/gWzfVaTZ9VoyeFL5PSdabeDZNl7aSSZ0WiQxsm6VqndaLZr7BSiBKLV02jVaoqRAlA2ZEj+jWy3SKn8yJJE7NcVb+lfl0yeSEMkb2nXKDMzMySjzrWtIKB9WYmLMXagfZ2i1I/wTansyfk3os+jHovOr8uj+dX5FpEo/K+1VGr71KTF2Y+03ptV3VkrPhT5aeL3VnrTpI9l7x//8QAFBEBAAAAAAAAAAAAAAAAAAAAcP/aAAgBAwEBPwEq/8QAGREAAwADAAAAAAAAAAAAAAAAAREwABBw/9oACAECAQE/AeBCQi9CKis//8QAGhAAAgIDAAAAAAAAAAAAAAAAACEBMVBggP/aAAgBAQAGPwLE2OS+5luv/8QAIBAAAgICAgMBAQAAAAAAAAAAAAEQESAhMWEwQVFxgf/aAAgBAQABPyFoHHg2JOSiy42UUEqVlY6UWhIpvyfgtFotFDuNug3SuVFHwaLVt2Mr0HvQPXoXfDLFj+C36aE+0Wbh39L+mX+yDPsThkfov0fwfwfwX0hPpCgh9l9GvgnU/AcULvCw3WOG8qUKDENWMXLfZDUsMuo6jqFDKkiikJFDRrJYOShxfiEMeCxuSWLNIuGPAzVi8CwbFtjGWJ7Lhi3wVRZYshmv0MQtC9jQbGUWiTY2FaNB96E/sTKNxRQxuGeDClPQlbLgl+lj1MUe4pFRIQ1CClQ3WJmyqJRQSs0Q1CGViUNWKRULDKdFyHTgrBYkPQZtNGiDeKxPrCGtlCFHTeL+B+CnxlPjLjWWMY0ymUymUJYI9mFPgkH40bIb3lA/JcOWXELqD8jYtl1Jxj8vQsXCaH5XAa8FqLH5K7nZoehY/LMW1BSaGPyvaHK4jnF+SzfIarmPQ+Yvyp6Er2dQuBIvwrBBOGyeyyy0LctlyxZVG+THJZyhMumKFDWhMb0NiUoaEcMbl6hWg5oZwwxzyJCj/9oADAMBAAIAAwAAABAnEPu/uyAfNxRgwiEPRAxfkgQOUdswxyFCAMCu445hcyotv/oMOBkWJi/FIMMqxNzjoOuINGw7KZLNoMPef4pxTqx/89FgxC4oQc8efjIBQCyA1e/kAgChxLJM+liDQiB/Lfml2wjyQc3umE+XGUlf3aoGvt+VOoGkcmTaOLtML//EABwRAAIDAQEBAQAAAAAAAAAAAAERABAgMCFAMf/aAAgBAwEBPxDXuSMKJZEIpQCHZgMfA7FmKzYntE8H8a4KLiTH8o4OhxdDZFAOJb/Yp//EABwRAAMAAwEBAQAAAAAAAAAAAAABERAgMDEhQP/aAAgBAgEBPxAhODE9Gy16UYmUo3RF2QyC3WHq8ouzw8vvOEIXhS8Uiflb5wTuGnDwoY1W7WFQli6+4f/EACYQAQACAgEDBAMBAQEAAAAAAAEAESExEEFRYSAwcZGBofHwsdH/2gAIAQEAAT8QtCXjrBZbSgxHX6lzrHylzzFHSWlvaZTPcX6QczzGJEiSpUGDJFAj8s0Q/UT0PuA7H3EPX9yjtTxsPNPNEuv7iHR9xYOMYCjPxAPWvmYY8A6V+Zm5E+dR6N8MtKEfBcqLu+CD01+pTuodol+qPzLMwZM/VGQnEGiMOEfmVf8AtA5wb/U8n6i0p/Ud5N8XJjcon/ERw/pL/wAy70i/bhLEIHQ0QaKJSmB0X+ZX+pf9J2T9y3b9w5Jjhqby8xCZIw6lco2ooVFTUWidEhby3H0UmWGiptBHbmZJMxXTEepPCmZcwTJEjlojpREN1H+qf5M/yZqTWplC8EMumMagEyR7RKckBuMYIAywRZ09GAQlXAoijuPMWJcWI4YxR0bhnLA5qVDRCGCjgkWYNEcYu5lLqAIa6Q9IYInaYOIFmYSCDPJicFzNmWJMDAs9NjJxYJcVRcqQaixFMZKYU68Eg36ErjUWag4DMMRHKPAjBcpI1xw2TMimOGDUIuK9BX+IrWS+EhCNJRl2prcdv0iKlgE7ctvCxWP3N/MYShis5sJ4ieCGhdJB5Uswtql+0AfMS5mKhqDGo+SAaIJUXCWQUcvBMFmihICABWesUoeM6xuUXpFHGGWN4lQTTgaPR0wKgPMBusx3SKKXErcYsYgrtlTO4Caj4cbgTT0LUqkD4GLBMoNygbXMSyFUIgTtDLGYtReCHC+cUbqWFu4FBOkdbm6FaGUIR9INRd0I3wQlyrMp38gFnaOSuYsQwsVPFDswsg7uAcGeN44h1LO8s7yzvMOkAuioKeDKlSpXq2gxvWXVVU+D7niPubhsWHg+0TSK0hdBufBBibveCGPt1VA5aIAeeJomKud9vQhBZxvEob1ZpwfbptFAGjkYx+ZeJ1+4dNgOrkoiCg7RpHiPt5qdjE6jMv2hyn5msdMuyM1y+sWE24oiw+IsFKDKXFHUGXxcuD6BzAOjs7xkgpJUNPiKoPWKpcGoMuXj0HJMCdsDTxnYlmSKzncHg9Jiy+O2XLAOMIx4uCKTyRGkJqUcLhKGUjAXg0fEdxhOsHMEOJsfPDDZEuWQebUQ5OND44C0oWMIOeAbbgVjrKEjKDzOsWZf5YCROpZ3IafEvCxLQ54GpXATIOFM2VNRvgCuP//Z" alt="燦燦吉祥物照片">
+   </div>
+  </section>
+
+  <section class="panel" id="transactions">
   <div class="section">
    <div class="section-title"><h3>新增交易</h3><span class="muted">收入・支出・帳戶轉帳</span></div>
    <form id="txForm">
@@ -570,7 +579,7 @@ function exportData(){let blob=new Blob([JSON.stringify({bookName:bookLabel(),..
 document.getElementById('exportBtn').onclick=exportData;document.getElementById('exportBtn2').onclick=exportData;
 document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=normalizeBookData(d);syncAccounts();save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
 document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state=normalizeBookData({...blankBookData(),accounts:ACCOUNTS.map(a=>({...a}))});syncAccounts();save()}};
-const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',goals:'存錢目標',reports:'財務統計',settings:'資料與設定'};
+const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',goals:'存錢目標',reports:'財務統計',settings:'資料與設定',mascot:'吉祥物'};
 function showPage(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('pageTitle').textContent=titles[p];if(p==='transactions')document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions())}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 document.getElementById('quickAdd').onclick=()=>{showPage('transactions');document.getElementById('txAmount').focus()};
