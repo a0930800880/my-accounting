@@ -166,6 +166,7 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
   <button data-page="transactions">◎　收支記帳</button>
   <button data-page="accounts">◎　帳戶管理</button>
   <button data-page="goals">◎　存錢目標</button>
+  <button data-page="repayments">◎　還款管理</button>
   <button data-page="reports">◎　財務統計</button>
   <button data-page="settings">⚙　資料與設定</button>
   <button data-page="mascot">◎　吉祥物</button>
@@ -215,6 +216,35 @@ input:focus,select:focus{border-color:#8ebce8;box-shadow:0 0 0 3px #a2d0ff35}
    <div id="goalList"></div>
   </div>
   <div class="help">存錢目標的累積金額由你自行更新，僅用來追蹤目標進度，不會自動扣除或增加銀行／帳戶餘額。</div>
+ </section>
+
+ <section class="panel" id="repayments">
+  <div class="section">
+   <div class="section-title"><h3>新增還款／應收款</h3><span class="muted">獨立管理，不影響收支帳與帳戶餘額</span></div>
+   <form id="debtForm">
+    <div class="form-grid">
+     <div class="field"><label for="debtDirection">管理類型</label><select id="debtDirection"><option value="owe">我要還款（我欠別人）</option><option value="receive">我要收款（別人欠我）</option></select></div>
+     <div class="field"><label for="debtName">項目名稱</label><input id="debtName" maxlength="50" required placeholder="例如：朋友借款／信用卡分期"></div>
+     <div class="field"><label for="debtPerson">對象</label><input id="debtPerson" maxlength="50" placeholder="姓名或機構名稱"></div>
+     <div class="field"><label for="debtPrincipal">本金（NT$）</label><input id="debtPrincipal" type="number" min="1" step="1" required placeholder="輸入本金"></div>
+     <div class="field"><label for="debtInterest">約定利息（NT$）</label><input id="debtInterest" type="number" min="0" step="1" value="0"></div>
+     <div class="field"><label for="debtDate">借款／應收日期</label><input id="debtDate" type="date"></div>
+     <div class="field"><label for="debtDue">預計到期日（選填）</label><input id="debtDue" type="date"></div>
+     <div class="field full"><label for="debtNote">備註</label><input id="debtNote" maxlength="150" placeholder="其他說明（選填）"></div>
+    </div>
+    <div class="actions"><button class="btn primary" type="submit">＋ 新增項目</button></div>
+   </form>
+  </div>
+  <div class="section">
+   <div class="section-title"><h3>還款總覽</h3><span class="muted">依項目分開計算</span></div>
+   <div class="metrics">
+    <div class="metric"><div class="m-label">我尚需還款</div><div class="m-value expense" id="oweRemaining">NT$ 0</div></div>
+    <div class="metric"><div class="m-label">我尚待收款</div><div class="m-value income" id="receiveRemaining">NT$ 0</div></div>
+   </div>
+   <div class="section-title"><h3>我要還款</h3><span class="muted" id="oweCount">0 筆</span></div><div id="oweList"></div>
+   <div class="section-title" style="margin-top:22px"><h3>我要收款</h3><span class="muted" id="receiveCount">0 筆</span></div><div id="receiveList"></div>
+  </div>
+  <div class="help">還款與收款紀錄只儲存在目前帳本的獨立管理資料中，不會自動建立收入／支出交易，也不會變動銀行或帳戶餘額。</div>
  </section>
 
  <section class="panel" id="mascot">
@@ -308,7 +338,7 @@ const BANK_COLORS={
  '王道銀行':'#E87532'
 };
 let ACCOUNTS=DEFAULT_ACCOUNTS.map(a=>({...a}));
-const blankBookData=()=>({accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),opening:{fubon:0,first:0,cash:0,post:0},transactions:[]});
+const blankBookData=()=>({accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),opening:{fubon:0,first:0,cash:0,post:0},transactions:[],goals:[],debts:[]});
 function normalizeBookData(data){
  const d=data&&typeof data==='object'?data:{};
  d.accounts=Array.isArray(d.accounts)&&d.accounts.length?d.accounts:DEFAULT_ACCOUNTS.map(a=>({...a}));
@@ -322,6 +352,7 @@ function normalizeBookData(data){
  });
  d.transactions=Array.isArray(d.transactions)?d.transactions:[];
  d.goals=Array.isArray(d.goals)?d.goals:[];
+ d.debts=Array.isArray(d.debts)?d.debts:[];
  return d;
 }
 function syncAccounts(){ACCOUNTS=state.accounts;fillSelects()}
@@ -433,6 +464,7 @@ function render(){
  fillSelects();
  document.getElementById('totalAssets').textContent=money(totals());
  renderGoals();
+ renderDebts();
   const bookNameEl=document.getElementById('dashboardBookName');if(bookNameEl)bookNameEl.textContent='帳本：'+bookLabel();
   renderBookSelect();
  document.getElementById('accountCards').innerHTML=ACCOUNTS.map(a=>`<div class="account" style="--accent:${a.color}"><div class="account-head"><div class="account-icon">${accountIcon(a.icon)}</div><div><div class="account-name">${a.name}</div><div class="account-desc">${a.desc}</div></div></div><div class="account-balance">${money(balance(a.id))}</div><div class="account-foot">目前登記餘額</div></div>`).join('');
@@ -510,6 +542,67 @@ document.getElementById('goalList').addEventListener('click',e=>{
  }
 });
 
+
+function debtTotal(d){return Math.max(0,Number(d.principal)||0)+Math.max(0,Number(d.interest)||0)}
+function debtPaid(d){return (Array.isArray(d.payments)?d.payments:[]).reduce((sum,p)=>sum+Math.max(0,Number(p.amount)||0),0)}
+function renderDebts(){
+ const debts=Array.isArray(state.debts)?state.debts:[];
+ const remaining=d=>Math.max(0,debtTotal(d)-debtPaid(d));
+ const owe=debts.filter(d=>d.direction==='owe'),receive=debts.filter(d=>d.direction==='receive');
+ document.getElementById('oweRemaining').textContent=money(owe.reduce((s,d)=>s+remaining(d),0));
+ document.getElementById('receiveRemaining').textContent=money(receive.reduce((s,d)=>s+remaining(d),0));
+ document.getElementById('oweCount').textContent=owe.length+' 筆';
+ document.getElementById('receiveCount').textContent=receive.length+' 筆';
+ const draw=(items,id)=>{
+  const el=document.getElementById(id);if(!items.length){el.innerHTML='<div class="empty">目前沒有項目。</div>';return}
+  el.innerHTML=items.map(d=>{
+   const total=debtTotal(d),paid=debtPaid(d),left=remaining(d),pct=total?Math.min(100,paid/total*100):0;
+   const payments=(d.payments||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+   return '<div class="goal-card" data-debt-id="'+esc(d.id)+'"><div class="goal-head"><div class="goal-name">'+esc(d.name)+'</div><div class="goal-percent">'+(total?(paid/total*100).toFixed(1):'0.0')+'%</div></div>'+
+    '<div class="muted">'+(d.direction==='owe'?'對象：':'對象：')+esc(d.person||'未填寫')+'　'+(d.due?'到期：'+esc(d.due):'')+'</div>'+
+    '<div class="goal-amounts"><div class="goal-stat"><span>本金＋利息</span><b>'+money(total)+'</b></div><div class="goal-stat"><span>'+(d.direction==='owe'?'已還款':'已收款')+'</span><b>'+money(paid)+'</b></div><div class="goal-stat"><span>剩餘金額</span><b>'+money(left)+'</b></div></div>'+
+    '<div class="goal-progress"><div style="width:'+pct+'%"></div></div>'+
+    (d.note?'<div class="muted">備註：'+esc(d.note)+'</div>':'')+
+    '<div class="goal-actions"><button class="btn primary" type="button" data-debt-action="pay" '+(left<=0?'disabled':'')+'>'+(d.direction==='owe'?'記錄還款':'記錄收款')+'</button><button class="btn" type="button" data-debt-action="history">查看紀錄（'+payments.length+'）</button><button class="btn" type="button" data-debt-action="edit">編輯</button><button class="btn danger" type="button" data-debt-action="delete">刪除</button></div>'+
+    '<div class="muted" data-payment-history hidden>'+payments.map(p=>esc(p.date||'')+'　'+money(p.amount)+'　'+esc(p.note||'')).join('<br>')+'</div></div>';
+  }).join('');
+ };
+ draw(owe,'oweList');draw(receive,'receiveList');
+}
+document.getElementById('debtForm').addEventListener('submit',e=>{
+ e.preventDefault();
+ const principal=Number(document.getElementById('debtPrincipal').value),interest=Number(document.getElementById('debtInterest').value||0),name=document.getElementById('debtName').value.trim();
+ if(!name||!Number.isFinite(principal)||principal<=0||!Number.isFinite(interest)||interest<0){alert('請輸入項目名稱及有效的本金、利息金額。');return}
+ state.debts=Array.isArray(state.debts)?state.debts:[];
+ state.debts.push({id:'debt_'+(crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):String(Date.now())),direction:document.getElementById('debtDirection').value,name,person:document.getElementById('debtPerson').value.trim(),principal,interest,date:document.getElementById('debtDate').value,due:document.getElementById('debtDue').value,note:document.getElementById('debtNote').value.trim(),payments:[],created:new Date().toISOString()});
+ e.target.reset();document.getElementById('debtInterest').value='0';save();alert('已新增還款管理項目。');
+});
+['oweList','receiveList'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{
+ const btn=e.target.closest('button[data-debt-action]');if(!btn)return;
+ const card=btn.closest('[data-debt-id]');if(!card)return;
+ const d=state.debts.find(x=>x.id===card.dataset.debtId);if(!d)return;
+ const action=btn.dataset.debtAction;
+ if(action==='pay'){
+  const amountText=prompt(d.direction==='owe'?'請輸入本次還款金額（NT$）：':'請輸入本次收款金額（NT$）：');if(amountText===null)return;
+  const amount=Number(amountText),left=Math.max(0,debtTotal(d)-debtPaid(d));
+  if(!Number.isFinite(amount)||amount<=0||amount>left){alert('金額必須大於 0，且不可超過剩餘金額 '+money(left)+'。');return}
+  const date=prompt('請輸入日期（YYYY-MM-DD）：',new Date().toISOString().slice(0,10));if(date===null)return;
+  const note=prompt('備註（可留空）：','') ;if(note===null)return;
+  d.payments=Array.isArray(d.payments)?d.payments:[];d.payments.push({id:'payment_'+Date.now(),amount,date,note});save();
+ }else if(action==='history'){
+  const history=card.querySelector('[data-payment-history]');history.hidden=!history.hidden;
+ }else if(action==='edit'){
+  const name=prompt('項目名稱：',d.name);if(name===null)return;if(!name.trim())return alert('名稱不能空白。');
+  const person=prompt('對象：',d.person||'');if(person===null)return;
+  const principal=Number(prompt('本金（NT$）：',String(d.principal)));if(!Number.isFinite(principal)||principal<=0)return alert('本金必須大於 0。');
+  const interest=Number(prompt('利息（NT$）：',String(d.interest||0)));if(!Number.isFinite(interest)||interest<0)return alert('利息不能小於 0。');
+  if(principal+interest<debtPaid(d))return alert('本金加利息不可低於已記錄的還款／收款總額。');
+  d.name=name.trim();d.person=person;d.principal=principal;d.interest=interest;save();
+ }else if(action==='delete'){
+  if(!confirm('確定刪除「'+d.name+'」及其所有還款／收款紀錄？'))return;
+  state.debts=state.debts.filter(x=>x.id!==d.id);save();
+ }
+}));
 function filteredTransactions(){let a=document.getElementById('filterAccount')?.value||'',ty=document.getElementById('filterType')?.value||'';return [...state.transactions].filter(t=>(!a&&(true)||t.account===a||t.from===a||t.to===a)&&(!ty||t.type===ty)).sort((x,y)=>(y.date||'').localeCompare(x.date||''))}
 function fillSelects(){
  let opts=ACCOUNTS.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
@@ -579,7 +672,7 @@ function exportData(){let blob=new Blob([JSON.stringify({bookName:bookLabel(),..
 document.getElementById('exportBtn').onclick=exportData;document.getElementById('exportBtn2').onclick=exportData;
 document.getElementById('importFile').addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.opening||!Array.isArray(d.transactions))throw Error();delete d.bookName;state=normalizeBookData(d);syncAccounts();save();alert('備份匯入成功')}catch(err){alert('檔案格式不正確，無法匯入')}};r.readAsText(f)});
 document.getElementById('clearBtn').onclick=()=>{if(confirm('確定清空全部交易與期初餘額？此動作無法復原，請先備份。')){state=normalizeBookData({...blankBookData(),accounts:ACCOUNTS.map(a=>({...a}))});syncAccounts();save()}};
-const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',goals:'存錢目標',reports:'財務統計',settings:'資料與設定',mascot:'吉祥物'};
+const titles={dashboard:'財務總覽',transactions:'收支記帳',accounts:'帳戶管理',goals:'存錢目標',repayments:'還款管理',reports:'財務統計',settings:'資料與設定',mascot:'吉祥物'};
 function showPage(p){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===p));document.getElementById('pageTitle').textContent=titles[p];if(p==='transactions')document.getElementById('allTransactions').innerHTML=transactionRows(filteredTransactions())}
 document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 document.getElementById('quickAdd').onclick=()=>{showPage('transactions');document.getElementById('txAmount').focus()};
